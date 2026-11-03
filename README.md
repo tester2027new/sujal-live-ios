@@ -1,3 +1,16 @@
+# Sujal Live iOS
+
+This is **Sujal Live iOS**, a lightly rebranded build of
+[Moblin](https://github.com/eerimoq/moblin) by **Erik Moqvist** and the Moblin
+contributors, used under the MIT License (see [LICENSE](LICENSE)).
+All credit for the app goes to the Moblin project.
+
+Changes in this fork: display name "Sujal Live", bundle id
+`com.toolsbysujal.live.ios`, and a GitHub Actions workflow
+(`.github/workflows/build-ipa.yml`) that builds an unsigned `.ipa`.
+
+---
+
 [<img src="docs/app-store.svg">](https://apps.apple.com/app/id6466745933)
 
 # Moblin - IRL Streaming
