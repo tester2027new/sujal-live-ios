@@ -1,0 +1,77 @@
+name: Build unsigned IPA (Sujal Live iOS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md', 'docs/**']
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          XC=$(ls -d /Applications/Xcode_*.app | grep -v -i beta | sort -V | tail -1)
+          echo "Using $XC"
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Rebrand (name + bundle id)
+        run: bash sujal/rebrand.sh
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies -project Moblin.xcodeproj -scheme Moblin \
+            -clonedSourcePackagesDirPath build/spm -skipPackagePluginValidation -skipMacroValidation
+
+      - name: Build (code signing off)
+        run: |
+          set -o pipefail
+          xcodebuild -project Moblin.xcodeproj -scheme Moblin -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd -clonedSourcePackagesDirPath build/spm \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            DEBUG_INFORMATION_FORMAT=dwarf COMPILER_INDEX_STORE_ENABLE=NO \
+            build > build.log 2>&1 || { grep -E "error:|fatal|BUILD FAILED|The following build commands failed" -A3 build.log | head -200; tail -60 build.log; exit 1; }
+          grep -E "BUILD SUCCEEDED" build.log
+          tail -5 build.log
+
+      - name: Package IPA
+        run: |
+          APP=$(find build/dd/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          echo "App: $APP"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Sujal Live" "$APP/Info.plist" || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Sujal Live" "$APP/Info.plist"
+          plutil -p "$APP/Info.plist" | grep -E 'CFBundle(Identifier|DisplayName|ShortVersionString|Version|Executable)|MinimumOSVersion'
+          ls "$APP"; ls "$APP/PlugIns" "$APP/Watch" "$APP/Extensions" 2>/dev/null || true
+          mkdir -p out/full/Payload out/lite/Payload
+          cp -R "$APP" out/full/Payload/
+          cp -R "$APP" out/lite/Payload/
+          LITE=$(ls -d out/lite/Payload/*.app)
+          rm -rf "$LITE/Watch" "$LITE/PlugIns" "$LITE/Extensions"
+          (cd out/full && zip -qry ../../SujalLive-iOS-unsigned.ipa Payload)
+          (cd out/lite && zip -qry ../../SujalLive-iOS-unsigned-lite.ipa Payload)
+          ls -la *.ipa
+          shasum -a 256 *.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SujalLive-iOS-unsigned
+          path: SujalLive-iOS-unsigned.ipa
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SujalLive-iOS-unsigned-lite
+          path: SujalLive-iOS-unsigned-lite.ipa
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-log
+          path: build.log
