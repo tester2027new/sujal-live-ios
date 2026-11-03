@@ -1,0 +1,36 @@
+name: Attach IPA to release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        default: v1.0-ios-test
+      run_id:
+        description: Build run whose IPA artifacts to attach
+        default: '41593346620'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          pattern: SujalLive-iOS-unsigned*
+          path: art
+      - name: Upload IPAs to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -lR art
+          cp art/SujalLive-iOS-unsigned-lite/*.ipa SujalLive-iOS-lite.ipa
+          cp art/SujalLive-iOS-unsigned/*.ipa SujalLive-iOS-full.ipa
+          ls -l *.ipa
+          sha256sum *.ipa
+          gh release upload "${{ inputs.tag }}" SujalLive-iOS-lite.ipa SujalLive-iOS-full.ipa --clobber -R "${{ github.repository }}"
