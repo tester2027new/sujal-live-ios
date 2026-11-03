@@ -34,6 +34,12 @@ jobs:
           xcodebuild -resolvePackageDependencies -project Moblin.xcodeproj -scheme Moblin \
             -clonedSourcePackagesDirPath build/spm -skipPackagePluginValidation -skipMacroValidation
 
+      - name: Patch VRMKit for Xcode 26.6 (local variable shadows method)
+        run: |
+          F=build/spm/checkouts/VRMKit/Sources/VRMRealityKit/Loading/GLTFSceneBuilder.swift
+          sed -i '' 's/let skeleton = try mesh.skinIndex.map { try skeleton(withSkinIndex: \$0) }/let skeleton = try mesh.skinIndex.map { try self.skeleton(withSkinIndex: $0) }/' "$F"
+          grep -n "self.skeleton(withSkinIndex" "$F"
+
       - name: Build (code signing off)
         run: |
           set -o pipefail
