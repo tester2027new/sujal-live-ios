@@ -14,3 +14,6 @@ EOF
 # Home-screen name.
 sed -i '' 's/INFOPLIST_KEY_CFBundleDisplayName = Moblin;/INFOPLIST_KEY_CFBundleDisplayName = "Sujal Live";/g' Moblin.xcodeproj/project.pbxproj
 grep -c 'INFOPLIST_KEY_CFBundleDisplayName = "Sujal Live";' Moblin.xcodeproj/project.pbxproj
+
+# App icon (1024x1024, single-size asset catalog like upstream).
+cp sujal/AppIcon-1024.png Moblin/Assets.xcassets/AppIcon.appiconset/logo-square.png

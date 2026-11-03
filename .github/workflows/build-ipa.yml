@@ -6,6 +6,10 @@ on:
     branches: [main]
     paths-ignore: ['README.md', 'docs/**']
 
+concurrency:
+  group: build-ipa
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: macos-26
@@ -34,7 +38,7 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild -project Moblin.xcodeproj -scheme Moblin -configuration Release \
-            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build/dd -clonedSourcePackagesDirPath build/spm \
             -skipPackagePluginValidation -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
