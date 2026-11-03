@@ -1,8 +1,8 @@
 name: All
 
 on:
-  push:
-  pull_request:
+  # Sujal Live fork: upstream lint checks only on manual run
+  workflow_dispatch:
 
 jobs:
   checks:
